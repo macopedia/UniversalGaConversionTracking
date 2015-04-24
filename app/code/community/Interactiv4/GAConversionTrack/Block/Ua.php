@@ -67,6 +67,20 @@ class Interactiv4_GAConversionTrack_Block_Ua extends Mage_Core_Block_Template
             /* Add pusrchased items info */
 
             foreach ($order->getAllVisibleItems() as $item) {
+                $categoryCollection = Mage::getResourceModel('catalog/category_collection')
+					->addAttributeToSelect('name')
+					->joinField('product_id',
+						'catalog/category_product',
+						'product_id',
+						'category_id = entity_id',
+						null)
+					->addFieldToFilter('product_id', $item->getProductId())
+					->addIsActiveFilter();
+
+				$categories = array();
+				foreach ($categoryCollection as $category) {
+					$categories[] = $category->getName();
+				}
                 $result[] = sprintf(
                     "__gaTracker('ecommerce:addItem', {
                     'id': '%s',
@@ -79,7 +93,7 @@ class Interactiv4_GAConversionTrack_Block_Ua extends Mage_Core_Block_Template
                     $order->getIncrementId(),
                     $this->jsQuoteEscape($item->getName()),
                     $this->jsQuoteEscape($item->getSku()),
-                    null,
+                    implode('|',$categories),
                     $item->getBasePrice(),
                     intval($item->getQtyOrdered())
                 );
